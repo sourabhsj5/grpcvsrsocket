@@ -1,0 +1,50 @@
+//package rsocketclient.rsocketclient;
+//
+//import com.amdocs.productOffering.model.ProductOfferingServiceGrpc;
+//import com.amdocs.productOffering.model.ProductOfferings;
+//import com.example.rsocket.server.rsocketserver.ProductOrderRequest;
+//import com.example.rsocket.server.rsocketserver.ProductOrderResponse;
+//import com.example.rsocket.server.rsocketserver.ProductOrderServiceGrpc;
+//import io.grpc.ManagedChannel;
+//import io.grpc.ManagedChannelBuilder;
+//import org.springframework.util.StopWatch;
+//import reactor.core.publisher.Flux;
+//import reactor.core.scheduler.Schedulers;
+//
+//public class MultiThreadedHandleOrder {
+//
+//    private static final ProductOrderRequest productOrderRequest = ProductOrderRequest.newBuilder().setId("asdasdadas")
+//            .build();
+//
+//    static int count = 1;
+//    static int concurrency = 1;
+//
+//    static ManagedChannel managedChannel = ManagedChannelBuilder.forAddress("localhost", 9977).usePlaintext().build();
+//    static ManagedChannel managedChannelProductOffering = ManagedChannelBuilder.forAddress("localhost", 9988).usePlaintext().build();
+//    static ProductOrderServiceGrpc.ProductOrderServiceBlockingStub productOrderServiceBlockingStub = ProductOrderServiceGrpc.newBlockingStub(managedChannel);
+//    static ProductOfferingServiceGrpc.ProductOfferingServiceBlockingStub productOfferingServiceBlockingStub = ProductOfferingServiceGrpc.newBlockingStub(managedChannelProductOffering);
+//
+////    public static void main(String[] args) {
+////        StopWatch stopWatch = new StopWatch();
+////        stopWatch.start();
+////        for (int i = 0; i < 500; i++) {
+////            execute();
+////        }
+////        stopWatch.stop();
+////        System.out.println("Time Taken: " + stopWatch.getTotalTimeMillis());
+////    }
+//
+//
+//    public static void execute() {
+//
+//        Flux.range(0, count).publishOn(Schedulers.elastic()).flatMap(integer -> Flux.create(sink -> {
+//            ProductOrderResponse productResponse = productOrderServiceBlockingStub.getProductOrder(productOrderRequest);
+//            ProductOrderProtobufResponseReader.readProductOrderResponse(productResponse);
+//            ProductOfferings productOfferings = productOfferingServiceBlockingStub.getProductOfferings(ProductOfferingsRequestBuilder.prepareProductOfferingsRequest());
+//            ProductOfferingsReader.readRequest(productOfferings);
+//            sink.complete();
+//        }), concurrency).blockLast();
+//    }
+//
+//
+//}

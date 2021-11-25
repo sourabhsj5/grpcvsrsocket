@@ -1,0 +1,85 @@
+package rsocketclient.rsocketclient;
+
+import java.time.Duration;
+
+import org.HdrHistogram.Histogram;
+
+import com.amdocs.productOffering.model.ProductOfferingServiceClient;
+import com.amdocs.productOffering.model.ProductOfferings;
+import com.example.rsocket.server.rsocketserver.ProductOrderRequest;
+import com.example.rsocket.server.rsocketserver.ProductOrderResponse;
+import com.example.rsocket.server.rsocketserver.ProductOrderServiceClient;
+
+//import io.rsocket.Frame;
+import io.rsocket.RSocket;
+//import io.rsocket.RSocketFactory;
+import io.rsocket.core.RSocketConnector;
+import io.rsocket.transport.netty.client.TcpClientTransport;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
+
+public class RSocketRpcRequestReplyClient {
+//  private static final Logger logger = LogManager.getLogger(RSocketRpcRequestReplyClient.class);
+  private static RSocket rsocket = RSocketConnector.create().keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5)).connect(TcpClientTransport.create("localhost", 6666)).cache().block();
+  private static RSocket productOfferingRSocket = RSocketConnector.create().keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5)).connect(TcpClientTransport.create("localhost", 6688)).cache().block();
+  public static void main(String... args) {
+	ProductOrderRequest productOrderRequest = ProductOrderRequest.newBuilder().setId("asdasdadas").build();
+    String host = System.getProperty("host", "127.0.0.1");
+    int port = Integer.getInteger("port", 6666);
+    int concurrency = Integer.getInteger("concurrency", 128);
+
+    int warmup = 1_000_000;
+    int count = 10000;
+
+//    RSocket rSocket =
+//        RSocketFactory.connect()
+//            .frameDecoder(Frame::retain)
+//            .keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5), 1)
+//            .transport(TcpClientTransport.create(host, port))
+//            .start()
+//            .block();
+
+    ProductOrderServiceClient client = new ProductOrderServiceClient(rsocket);
+    ProductOfferingServiceClient productOfferingServiceClient = new ProductOfferingServiceClient(productOfferingRSocket);
+//    logger.info("starting warmup...");
+//    Flux.range(0, warmup)
+//        .flatMap(
+//            integer -> {
+//              SimpleRequest request = SimpleRequest.newBuilder().setRequestMessage("hello").build();
+//              return client.requestReply(request);
+//            })
+//        .doOnError(Throwable::printStackTrace)
+//        .blockLast();
+//    logger.info("warmup complete");
+
+    long start = System.nanoTime();
+    Histogram histogram = new Histogram(3600000000000L, 3);
+    System.out.println("starting test - sending " + count);
+    Flux.range(0, count)
+        .publishOn(Schedulers.elastic()).flatMap(integer -> {
+              long s = System.nanoTime();
+              return Flux.create(sink -> {
+            	  ProductOrderResponse productResponse = client
+                          .getProductOrder(productOrderRequest).block();
+            	  
+            	  //System.out.println(productResponse.getDescription());
+            	  readProductResponse(productResponse);
+            	  ProductOfferings productOfferings = productOfferingServiceClient.getProductOfferings(ProductOfferingsRequestBuilder.prepareProductOfferingsRequest()).block();
+            	  ProductOfferingsReader.readRequest(productOfferings);
+            	  //System.out.println(productOfferings.getProductOfferingCount());
+  				histogram.recordValue(System.nanoTime() - s); 
+  				sink.complete();
+              });
+            },
+            concurrency)
+        .blockLast();
+    histogram.outputPercentileDistribution(System.out, 1000.0d);
+    double completedMillis = (System.nanoTime() - start) / 1_000_000d;
+    double rps = count / ((System.nanoTime() - start) / 1_000_000_000d);
+    System.out.println("test complete in {} ms" + completedMillis);
+    System.out.println("test rps {}" + rps);
+  }
+  private static void readProductResponse(ProductOrderResponse productResponse) {
+		ProductOrderProtobufResponseReader.readProductOrderResponse(productResponse);
+	}
+}

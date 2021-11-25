@@ -1,0 +1,51 @@
+//package rsocketclient.rsocketclient;
+//
+//import com.amdocs.productOffering.model.ProductOfferingServiceClient;
+//import com.amdocs.productOffering.model.ProductOfferings;
+//import com.example.rsocket.server.rsocketserver.ProductOrderRequest;
+//import com.example.rsocket.server.rsocketserver.ProductOrderResponse;
+//import com.example.rsocket.server.rsocketserver.ProductOrderServiceClient;
+//import io.rsocket.RSocket;
+//import io.rsocket.core.RSocketConnector;
+//import io.rsocket.transport.netty.client.TcpClientTransport;
+//import reactor.core.publisher.Flux;
+//import reactor.core.scheduler.Schedulers;
+//
+//import java.time.Duration;
+//
+//public class MultithreadedHandleOrder {
+//
+//    private static final RSocket rsocket = RSocketConnector.create().keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5)).connect(TcpClientTransport.create("localhost", 6666)).cache().block();
+//    private static final RSocket productOfferingRSocket = RSocketConnector.create().keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5)).connect(TcpClientTransport.create("localhost", 6688)).cache().block();
+//    static ProductOrderServiceClient client = new ProductOrderServiceClient(rsocket);
+//    static ProductOfferingServiceClient productOfferingServiceClient = new ProductOfferingServiceClient(productOfferingRSocket);
+//    static ProductOrderRequest productOrderRequest = ProductOrderRequest.newBuilder().setId("asdasdadas").build();
+//    static int concurrency = 1;
+//    static int count = 1;
+//
+//
+////    public static void main(String[] args) {
+////        StopWatch stopWatch = new StopWatch();
+////        stopWatch.start();
+////        for (int i = 0; i < 500; i++) {
+////            execute();
+////        }
+////        stopWatch.stop();
+////        System.out.println("Time Taken: " + stopWatch.getTotalTimeMillis());
+////    }
+//
+//
+//    public static void execute() {
+//        Flux.range(0, count)
+//                .publishOn(Schedulers.elastic()).flatMap(integer -> Flux.create(sink -> {
+//                    ProductOrderResponse productResponse = client
+//                            .getProductOrder(productOrderRequest).block();
+//                    ProductOrderProtobufResponseReader.readProductOrderResponse(productResponse);
+//                    ProductOfferings productOfferings = productOfferingServiceClient.getProductOfferings(ProductOfferingsRequestBuilder.prepareProductOfferingsRequest()).block();
+//                    ProductOfferingsReader.readRequest(productOfferings);
+//                    sink.complete();
+//                }),
+//                concurrency)
+//                .blockLast();
+//    }
+//}

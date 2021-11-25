@@ -1,0 +1,55 @@
+ackage rsocketclient.rsocketclient;
+
+import com.amdocs.grpc.HelloRequest;
+import com.amdocs.grpc.HelloResponse;
+import com.amdocs.grpc.HelloServiceGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@SpringBootApplication
+public class GRPCClientApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(GRPCClientApplication.class, args);
+    }
+}
+
+@RestController
+class HelloController {
+
+    @Autowired
+    GRPCClient grpcClient;
+
+    @GetMapping("/hello")
+    public ResponseEntity<Void> hello() {
+
+        HelloRequest.Builder helloRequest = HelloRequest.newBuilder();
+        helloRequest.setFirstName("ashish");
+        helloRequest.setLastName("john");
+        HelloResponse helloResponse = grpcClient.getBlockingStub().hello(helloRequest.build());
+        System.out.println(helloResponse.getGreeting());
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+}
+
+
+@Component
+class GRPCClient {
+
+    public HelloServiceGrpc.HelloServiceBlockingStub getBlockingStub() {
+        ManagedChannel managedChannel = ManagedChannelBuilder.forAddress("localhost", 2001)
+                .usePlaintext().build();
+        return HelloServiceGrpc.newBlockingStub(managedChannel);
+    }
+
+}
+
+

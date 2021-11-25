@@ -1,0 +1,67 @@
+package rsocketclient.rsocketclient;
+
+import java.time.Duration;
+
+import org.springframework.stereotype.Component;
+
+import com.amdocs.productOffering.model.ProductOfferingServiceClient;
+import com.amdocs.productOffering.model.ProductOfferings;
+import com.example.rsocket.server.rsocketserver.ProductOrderRequest;
+import com.example.rsocket.server.rsocketserver.ProductOrderResponse;
+import com.example.rsocket.server.rsocketserver.ProductOrderServiceClient;
+
+import io.rsocket.RSocket;
+import io.rsocket.core.RSocketConnector;
+import io.rsocket.transport.netty.client.TcpClientTransport;
+
+@Component
+public class MultithreadedHandleOrderWithTL {
+
+    static ThreadLocal<RSocket> productOrderTL = new ThreadLocal<>();
+    static ThreadLocal<RSocket> productOfferingTL = new ThreadLocal<>();
+    static ThreadLocal<ProductOrderServiceClient> productOrderServiceClientTL = new ThreadLocal<>();
+    static ThreadLocal<ProductOfferingServiceClient> productOfferingServiceClientTL = new ThreadLocal<>();
+
+    static ProductOrderRequest productOrderRequest = ProductOrderRequest.newBuilder().setId("asdasdadas").build();
+    static int concurrency = 1;
+    static int count = 1;
+
+
+//    public static void main(String[] args) {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        for (int i = 0; i < 500; i++) {
+//            execute();
+//        }
+//        stopWatch.stop();
+//        System.out.println("Time Taken: " + stopWatch.getTotalTimeMillis());
+//    }
+
+
+    public void execute() {
+
+//        Flux.range(0, count)
+//                .publishOn(Schedulers.elastic()).flatMap(integer -> Flux.create(sink -> {
+                    if (productOrderTL.get() == null) {
+                        //System.out.println("creating new productOrderTL");
+                        productOrderTL.set(RSocketConnector.create().keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5)).connect(TcpClientTransport.create("localhost", 6666)).cache().block());
+                       productOrderServiceClientTL.set(new ProductOrderServiceClient(productOrderTL.get()));
+                    }
+                    if (productOfferingTL.get() == null) {
+                        //System.out.println("creating new productOfferingTL");
+                        productOfferingTL.set(RSocketConnector.create().keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5)).connect(TcpClientTransport.create("localhost", 6688)).cache().block());
+                        productOfferingServiceClientTL.set(new ProductOfferingServiceClient(productOfferingTL.get()));
+                    }
+                    ProductOrderResponse productResponse = productOrderServiceClientTL.get()
+                            .getProductOrder(productOrderRequest).block();
+//                    System.out.println(productResponse.getDescription());
+                    ProductOrderProtobufResponseReader.readProductOrderResponse(productResponse);
+                    ProductOfferings productOfferings = productOfferingServiceClientTL.get().getProductOfferings(ProductOfferingsRequestBuilder.prepareProductOfferingsRequest()).block();
+                    ProductOfferingsReader.readRequest(productOfferings);
+                    
+//                    sink.complete();
+//                }),
+//                concurrency)
+//                .blockLast();
+    }
+}

@@ -1,0 +1,5 @@
+server:
+  port: 1004
+logging:
+  pattern:
+    console:

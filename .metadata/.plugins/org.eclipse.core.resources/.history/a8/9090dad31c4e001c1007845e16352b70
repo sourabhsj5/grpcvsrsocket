@@ -1,0 +1,125 @@
+package rsocketclient.rsocketclient;
+
+import org.HdrHistogram.Histogram;
+
+import com.amdocs.productOffering.model.ProductOfferingServiceGrpc;
+import com.amdocs.productOffering.model.ProductOfferings;
+import com.example.rsocket.server.rsocketserver.ProductOrderRequest;
+import com.example.rsocket.server.rsocketserver.ProductOrderResponse;
+import com.example.rsocket.server.rsocketserver.ProductOrderServiceGrpc;
+
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.stub.StreamObserver;
+//import io.netty.channel.nio.NioEventLoopGroup;
+//import io.netty.util.concurrent.DefaultThreadFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
+
+public class GrpcRequestReplyClient {
+//	private static final Logger logger = LogManager.getLogger(GrpcRequestReplyClient.class);
+
+	public static void main(String... args) throws Exception {
+//		int warmup = 1_000_000;
+		int count = 10000;
+		String host = System.getProperty("host", "localhost");
+		int port = Integer.getInteger("port", 9999);
+		int concurrency = Integer.getInteger("concurrency", 128);
+		boolean isBlocking = Boolean.valueOf(System.getProperty("isBlocking", "true"));
+//		ThreadFactory tf = new DefaultThreadFactory("client-elg-", true /* daemon */);
+//		NioEventLoopGroup worker = new NioEventLoopGroup(0, tf);
+//		ExecutorService executor = worker;
+		ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
+		ManagedChannel managedChannelProductOffering = ManagedChannelBuilder.forAddress(host, 9988).usePlaintext().build();
+//    ManagedChannel managedChannel =
+//        NettyChannelBuilder.forAddress(host, port)
+//            .eventLoopGroup(worker)
+//            .channelType(NioSocketChannel.class)
+//            .directExecutor()
+//            .flowControlWindow(NettyChannelBuilder.DEFAULT_FLOW_CONTROL_WINDOW)
+//            .usePlaintext()
+//            .build();
+
+		ProductOrderServiceGrpc.ProductOrderServiceBlockingStub simpleServiceBlocking = null;
+		ProductOrderServiceGrpc.ProductOrderServiceStub simpleServiceNonBlocking = null;
+		ProductOfferingServiceGrpc.ProductOfferingServiceBlockingStub productOfferingBlockingStub = null;
+		ProductOfferingServiceGrpc.ProductOfferingServiceStub productOfferingServiceStub = null;
+		if (isBlocking) {
+			simpleServiceBlocking = ProductOrderServiceGrpc.newBlockingStub(managedChannel);
+			productOfferingBlockingStub = ProductOfferingServiceGrpc.newBlockingStub(managedChannelProductOffering);
+		} else {
+			simpleServiceNonBlocking = ProductOrderServiceGrpc.newStub(managedChannel);
+			productOfferingServiceStub = ProductOfferingServiceGrpc.newStub(managedChannelProductOffering);
+		}
+		Histogram histogram;// = new Histogram(3600000000000L, 3);
+//		System.out.println("starting warmup...");
+//		execute(count, simpleService, histogram, concurrency, executor);
+//		System.out.println("warmup complete");
+
+		System.out.println("starting test - sending {}" + count);
+		histogram = new Histogram(3600000000000L, 3);
+		long start = System.nanoTime();
+		execute(count, simpleServiceBlocking, simpleServiceNonBlocking, productOfferingBlockingStub, productOfferingServiceStub, histogram, concurrency, isBlocking);
+
+		histogram.outputPercentileDistribution(System.out, 1000.0d);
+		double completedMillis = (System.nanoTime() - start) / 1_000_000d;
+		double rps = count / ((System.nanoTime() - start) / 1_000_000_000d);
+		System.out.println("test complete in {} ms" + completedMillis);
+		System.out.println("test rps {}" + rps);
+//		System.exit(0);
+	}
+
+	private static ProductOrderRequest productOrderRequest = ProductOrderRequest.newBuilder().setId("asdasdadas")
+			.build();
+
+	@SuppressWarnings("deprecation")
+	private static void execute(int count,
+			ProductOrderServiceGrpc.ProductOrderServiceBlockingStub simpleServiceBlocking,
+			ProductOrderServiceGrpc.ProductOrderServiceStub simpleServiceNonBlocking, 
+			ProductOfferingServiceGrpc.ProductOfferingServiceBlockingStub productOfferingBlockingStub,
+			ProductOfferingServiceGrpc.ProductOfferingServiceStub productOfferingServiceStub,
+			Histogram histogram,
+			int concurrency, boolean isBlocking) {
+		Flux.range(1, count).publishOn(Schedulers.elastic()).flatMap(integer -> {
+			long s = System.nanoTime();
+			return Flux.create(sink -> {
+				if (isBlocking) {
+					ProductOrderResponse productResponse = simpleServiceBlocking.getProductOrder(productOrderRequest);
+					readProductResponse(productResponse);
+					ProductOfferings productOfferings = productOfferingBlockingStub.getProductOfferings(ProductOfferingsRequestBuilder.prepareProductOfferingsRequest());
+					ProductOfferingsReader.readRequest(productOfferings);
+					histogram.recordValue(System.nanoTime() - s);
+					sink.complete();
+				} else {
+					simpleServiceNonBlocking.getProductOrder(productOrderRequest,
+							new StreamObserver<ProductOrderResponse>() {
+								ProductOrderResponse productResponse = null;
+
+								@Override
+								public void onNext(ProductOrderResponse value) {
+									sink.next(value);
+									productResponse = value;
+								}
+
+								@Override
+								public void onError(Throwable t) {
+									sink.error(t);
+								}
+
+								@Override
+								public void onCompleted() {
+									readProductResponse(productResponse);
+									histogram.recordValue(System.nanoTime() - s);
+									sink.complete();
+								}
+							});
+
+				}
+			});
+		}, concurrency).blockLast();
+	}
+
+	private static void readProductResponse(ProductOrderResponse productResponse) {
+		ProductOrderProtobufResponseReader.readProductOrderResponse(productResponse);
+	}
+}

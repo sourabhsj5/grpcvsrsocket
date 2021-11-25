@@ -1,0 +1,114 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package com.test.productOffering.model;
+
+message ProductOfferings{
+  repeated ProductOffering productOffering = 1;
+}
+message ProductOffering{
+  string id = 1;
+
+  string href = 2;
+
+  string version = 3;
+  string name = 4;
+  string description = 5;
+  bool isBundle = 6;
+  string validFor = 7;
+  bool  mustBeBundled = 8;
+  ProductOfferingType productOfferingType = 9;
+  ProductSpecificationRef productSpecification = 10;
+  repeated ProductSpecificationRef productSpecificationRef = 11;
+  repeated ProductOfferingCharacteristic productOfferingCharacteristic = 12;
+  repeated VariantGroupRelationship variantGroup = 13;
+  repeated BundledProdOfferGroupOption bundledProdOfferGroupOption = 14;
+  repeated BundledProductOffering bundledProductOffering = 15;
+
+}
+
+
+message BundledProductOffering{
+  string id = 1;
+
+  string href = 2;
+  string name = 3;
+
+  string description = 4;
+  ProductOfferingType productOfferingType = 5;
+}
+message BundledProdOfferGroupOption{
+  string groupOptionId = 1;
+  string name = 2;
+  string description = 3;
+  ProductOfferingType productOfferingType = 4;
+  int32 numberRelOfferLowerLimit = 5;
+  int32 numberRelOfferUpperLimit = 6;
+  bool bundleSameOffer = 7;
+  repeated BundledGroupProductOffering bundledGroupProductOffering = 8;
+}
+
+message BundledGroupProductOffering{
+  string id = 1;
+  string href = 2;
+  string name = 3;
+  string description = 4;
+  ProductOfferingType productOfferingType = 5;
+
+}
+
+message VariantGroupRelationship{
+  string id = 1;
+  string href = 2;
+}
+message ProductOfferingCharacteristic{
+  string name = 1;
+
+  string localizedName = 2;
+
+  string configurable = 3;
+  string valueType = 4;
+  string unitOfMeasure = 5;
+  string minCardinality = 6;
+  int32 maxCardinality = 7;
+  repeated ProductOfferingCharacteristicValue productOfferingCharacteristicValue = 8;
+  repeated ProductOfferingCharacteristicProperty productOfferingCharacteristicProperty = 9;
+
+}
+message ProductOfferingCharacteristicProperty{
+  string name = 1;
+  repeated string value = 2;
+}
+
+message ProductOfferingCharacteristicValue{
+  string valueType = 1;
+
+  string _default = 2;
+
+  string value = 3;
+  string localizedValue = 4;
+  string unitOfMeasure = 5;
+  string valueFrom = 6;
+  string valueTo = 7;
+}
+
+message ProductOfferingType{
+  string id = 1;
+
+  string href = 2;
+
+  string name = 3;
+
+}
+
+message ProductSpecificationRef{
+  string id = 1;
+
+  string href = 2;
+
+  string name = 3;
+
+}
+
+service ProductOfferingService {
+  rpc getProductOfferings(ProductOfferings) returns (ProductOfferings);
+}

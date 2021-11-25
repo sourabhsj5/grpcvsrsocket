@@ -1,0 +1,38 @@
+package rsocket.rsocketserver.services;
+
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.stereotype.Controller;
+
+import com.amdocs.productOffering.model.ProductOfferings;
+import com.example.rsocket.server.rsocketserver.ProductOrderRequest;
+import com.example.rsocket.server.rsocketserver.ProductOrderResponse;
+
+import reactor.core.publisher.Mono;
+import rsocket.rsocketserver.ProductOfferingsReader;
+import rsocket.rsocketserver.ProductOrderProtobufResponseBuilder;
+
+@Controller
+public class RSocketServices {
+
+	private static ProductOrderResponse productOrderProtobufResponse = ProductOrderProtobufResponseBuilder.prepareProductOrderResponse(); 
+	@MessageMapping("/productOrder/rr")
+	public Mono<ProductOrderResponse> getProductOrder(ProductOrderRequest request) {
+		readRequest(request);
+		return Mono.just(productOrderProtobufResponse); 
+	}
+	
+	@MessageMapping("/productOfferings/rr")
+	public Mono<ProductOfferings> getProductOfferings(ProductOfferings request) {
+		readProductOfferingRequest(request);
+		return Mono.just(request); 
+	}
+	
+	private void readRequest(ProductOrderRequest request) {
+		request.getId();
+	}
+	
+	private void readProductOfferingRequest(ProductOfferings request) {
+		ProductOfferingsReader.readRequest(request);
+	}
+}
+ 

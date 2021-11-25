@@ -1,0 +1,29 @@
+//package rsocketclient.rsocketclient;
+//
+//import com.amdocs.grpc.HelloResponse;
+//import com.amdocs.grpc.HelloServiceGrpc;
+//import io.grpc.ServerBuilder;
+//
+//import java.io.IOException;
+//
+//public class GRPCServer {
+//
+//    public static void main(String[] args) throws IOException, InterruptedException {
+//
+//        io.grpc.Server start = ServerBuilder.forPort(9999)
+//                .addService(new DefaultService())
+//                .build()
+//                .start();
+//        start.awaitTermination();
+//    }
+//
+//    static class DefaultService extends HelloServiceGrpc.HelloServiceImplBase {
+//        @Override
+//        public void hello(com.amdocs.grpc.HelloRequest request,
+//                          io.grpc.stub.StreamObserver<com.amdocs.grpc.HelloResponse> responseObserver) {
+//            responseObserver.onNext(HelloResponse.newBuilder().setGreeting("Hello! " + request.getFirstName() + " " + request.getLastName()).build());
+//            responseObserver.onCompleted();
+//        }
+//
+//    }
+//}

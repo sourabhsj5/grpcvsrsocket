@@ -1,0 +1,95 @@
+//package rsocketclient.rsocketclient;
+//
+//import com.amdocs.rsocket.HelloRequest;
+//import com.amdocs.rsocket.HelloResponse;
+//import com.amdocs.rsocket.HelloServiceClient;
+//import com.example.rsocket.server.rsocketserver.ProductOrderRequest;
+//import com.example.rsocket.server.rsocketserver.ProductOrderResponse;
+//import com.example.rsocket.server.rsocketserver.ProductOrderServiceClient;
+//import io.rsocket.RSocket;
+//import io.rsocket.core.RSocketConnector;
+//import io.rsocket.transport.netty.client.TcpClientTransport;
+//
+//import javax.annotation.PostConstruct;
+//
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.boot.SpringApplication;
+//import org.springframework.boot.autoconfigure.SpringBootApplication;
+//import org.springframework.http.HttpStatus;
+//import org.springframework.http.ResponseEntity;
+//import org.springframework.http.codec.protobuf.ProtobufDecoder;
+//import org.springframework.http.codec.protobuf.ProtobufEncoder;
+//import org.springframework.messaging.rsocket.RSocketRequester;
+//import org.springframework.messaging.rsocket.RSocketStrategies;
+//import org.springframework.web.bind.annotation.GetMapping;
+//import org.springframework.web.bind.annotation.RestController;
+//
+//@SpringBootApplication
+//public class RsocketClientApplication {
+//
+//    public static void main(String[] args) {
+//        SpringApplication.run(RsocketClientApplication.class, args);
+//    } 
+//
+//}
+//
+//@RestController
+//class HelloController {
+//
+//	private static ProductOrderRequest productOrderRequest = ProductOrderRequest.newBuilder().setId("asdasdadas").build();
+//	private RSocketRequester rsocketRequester;
+//	
+//	@Autowired
+//	private RSocketRequester.Builder builder;
+//	
+//	@PostConstruct
+//	public void initRequester() {
+//		rsocketRequester = builder.rsocketStrategies(RSocketStrategies.builder().decoder(new ProtobufDecoder()).encoder(new ProtobufEncoder()).build()).tcp("localhost", 6565);
+//	}
+//	
+//    @GetMapping("/hello/rpc")
+//    public ResponseEntity<Void> hello() {
+//        HelloServiceClient helloServiceClient = new HelloServiceClient(RSocketClient.getRSocket());
+//        HelloRequest.Builder helloRequest = HelloRequest.newBuilder();
+//        helloRequest.setFirstName("ashish");
+//        helloRequest.setLastName("john");
+//        HelloResponse helloResponse = helloServiceClient.hello(helloRequest.build()).block();
+//        helloResponse.getGreeting();
+//        return ResponseEntity.status(HttpStatus.OK).build();
+//    }
+//
+//    @GetMapping("/productOrder/rpc")
+//    public ResponseEntity<Void> productOrderRPC() {
+//        ProductOrderServiceClient poClient = new ProductOrderServiceClient(RSocketClient.getRSocket());
+//        ProductOrderRequest.Builder poRequest = ProductOrderRequest.newBuilder();
+//        poRequest.setId("asdasdadas");
+//        ProductOrderResponse productResponse = poClient.getProductOrder(poRequest.build()).block();
+//        readResponse(productResponse);
+//        return ResponseEntity.status(HttpStatus.OK).build();
+//    }
+//    
+//    @GetMapping("/productOrder/protobuf")
+//    public ResponseEntity<Void> productOrderPB() {
+//    	ProductOrderResponse response = rsocketRequester.route("/productOrder/rr").data(productOrderRequest).retrieveMono(ProductOrderResponse.class).block();
+//        readResponse(response);
+//        return ResponseEntity.status(HttpStatus.OK).build();
+//    }
+//
+//	private void readResponse(ProductOrderResponse response) {
+//		ProductOrderProtobufResponseReader.readProductOrderResponse(response);
+//	}
+//}
+//
+//
+//class RSocketClient {
+//
+//
+//    private static RSocket rsocket = RSocketConnector.create().connect(TcpClientTransport.create("localhost", 6666)).cache().block();
+//
+//    public static RSocket getRSocket() {
+//        return rsocket;
+//    }
+//
+//}
+//
+//

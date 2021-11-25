@@ -1,0 +1,79 @@
+package rsocketclient.rsocketclient;
+
+import com.test.grpc.HelloRequest;
+import com.test.grpc.HelloResponse;
+import com.test.grpc.HelloServiceGrpc;
+import com.example.rsocket.server.rsocketserver.ProductOrderRequest;
+import com.example.rsocket.server.rsocketserver.ProductOrderResponse;
+import com.example.rsocket.server.rsocketserver.ProductOrderServiceGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@SpringBootApplication
+public class GRPCClientApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(GRPCClientApplication.class, args);
+    }
+}
+
+@RestController
+class HelloController {
+
+    @GetMapping("/hello")
+    public ResponseEntity<Void> hello() {
+
+        HelloRequest.Builder helloRequest = HelloRequest.newBuilder();
+        helloRequest.setFirstName("ashish");
+        helloRequest.setLastName("john");
+        HelloResponse helloResponse = null;
+        helloResponse = GRPCClient.getBlockingStub().hello(helloRequest.build());
+        helloResponse.getGreeting();
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @GetMapping("/productOrder")
+    public ResponseEntity<Void> productOrder() {
+        ProductOrderRequest.Builder poRequest = ProductOrderRequest.newBuilder();
+        poRequest.setId("asdasdadas");
+        ProductOrderResponse productResponse = GRPCClient.getBlockingStub2().getProductOrder(poRequest.build());
+        readProductResponse(productResponse);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+	private void readProductResponse(ProductOrderResponse productResponse) {
+		ProductOrderProtobufResponseReader.readProductOrderResponse(productResponse);
+	}
+
+	public static void main(String[] args) {
+		
+	}
+}
+
+class GRPCClient {
+
+    static ManagedChannel managedChannel = ManagedChannelBuilder.forAddress("localhost", 9999)
+            .usePlaintext().build();
+
+    static HelloServiceGrpc.HelloServiceBlockingStub stub = HelloServiceGrpc.newBlockingStub(managedChannel);
+
+    static ProductOrderServiceGrpc.ProductOrderServiceBlockingStub stub2 = ProductOrderServiceGrpc.newBlockingStub(managedChannel);
+
+    public static HelloServiceGrpc.HelloServiceBlockingStub getBlockingStub() {
+        return stub;
+    }
+
+    public static ProductOrderServiceGrpc.ProductOrderServiceBlockingStub getBlockingStub2() {
+        return stub2;
+    }
+
+
+}
+
+

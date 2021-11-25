@@ -1,0 +1,33 @@
+package rsocket.rsocketserver;
+
+import com.amdocs.rsocket.HelloRequest;
+import com.amdocs.rsocket.HelloResponse;
+import com.amdocs.rsocket.HelloService;
+import com.amdocs.rsocket.HelloServiceServer;
+import io.netty.buffer.ByteBuf;
+import io.rsocket.core.RSocketServer;
+import io.rsocket.transport.netty.server.TcpServerTransport;
+import reactor.core.publisher.Mono;
+
+import java.util.Optional;
+
+public class RSocketRPCServer {
+
+    public static void main(String[] args) throws InterruptedException {
+        RSocketServer.create()
+                .acceptor((connectionSetupPayload, rSocket) -> Mono.just(new HelloServiceServer(new DefaultService(), Optional.empty(), Optional.empty(), Optional.empty())))
+                .bind(TcpServerTransport.create("localhost", 6666))
+                .cache()
+                .block();
+        Thread.currentThread().join();
+    }
+
+    static class DefaultService implements HelloService {
+        @Override
+        public Mono<HelloResponse> hello(HelloRequest message, ByteBuf metadata) {
+            String greet = "Hello!  " + message.getFirstName() +" "+ message.getLastName();
+            return Mono.just(HelloResponse.newBuilder().setGreeting(greet).build());
+        }
+    }
+
+}

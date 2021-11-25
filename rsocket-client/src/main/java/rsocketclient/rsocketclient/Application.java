@@ -1,0 +1,48 @@
+package rsocketclient.rsocketclient;
+
+import java.time.Duration;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.test.productOffering.model.ProductOfferingServiceClient;
+import com.test.productOffering.model.ProductOfferings;
+import com.test.rsocket.server.rsocketserver.ProductOrderRequest;
+import com.test.rsocket.server.rsocketserver.ProductOrderResponse;
+import com.test.rsocket.server.rsocketserver.ProductOrderServiceClient;
+
+import io.rsocket.RSocket;
+import io.rsocket.core.RSocketConnector;
+import io.rsocket.transport.netty.client.TcpClientTransport;
+
+@SpringBootApplication
+public class Application {
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
+}
+
+@RestController
+class HandleOrderController {
+	static ProductOrderRequest productOrderRequest = ProductOrderRequest.newBuilder().setId("asdasdadas").build();
+	static RSocket productOrderRSocket = RSocketConnector.create()
+			.keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5))
+			.connect(TcpClientTransport.create("localhost", 8888)).cache().block();
+	static RSocket productOfferingRSocket = RSocketConnector.create()
+			.keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5))
+			.connect(TcpClientTransport.create("localhost", 8899)).cache().block();
+	static ProductOrderServiceClient productOrderServiceClient = new ProductOrderServiceClient(productOrderRSocket);
+	static ProductOfferingServiceClient productOfferingServiceClient = new ProductOfferingServiceClient(productOfferingRSocket);
+	static ProductOfferings productOfferings = ProductOfferingsRequestBuilder.prepareProductOfferingsRequest();
+	@GetMapping("/handleOrderRSocket")
+	public void handleOrderRSocket() {
+		ProductOrderResponse productResponse = productOrderServiceClient
+                .getProductOrder(productOrderRequest).block();
+        ProductOrderProtobufResponseReader.readProductOrderResponse(productResponse);
+        ProductOfferings productOfferingsResponse = productOfferingServiceClient.getProductOfferings(productOfferings).block();
+        ProductOfferingsReader.readRequest(productOfferingsResponse);
+	}
+
+}

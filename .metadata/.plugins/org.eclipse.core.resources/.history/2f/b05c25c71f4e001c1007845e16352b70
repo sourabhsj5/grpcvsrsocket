@@ -1,0 +1,184 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package com.example.rsocket.server.rsocketserver;
+
+message Relatedparty {
+  string id = 1;
+  string role = 2;
+}
+
+message Billingaccount {
+  string id = 1;
+}
+
+message Taxincludedamount {
+  string unit = 1;
+  uint32 value = 2;
+}
+
+message Dutyfreeamount {
+  string unit = 1;
+  uint32 value = 2;
+}
+
+message Taxamount {
+  string unit = 1;
+  uint32 value = 2;
+}
+
+message Price {
+  Taxincludedamount taxIncludedAmount = 1;
+  Dutyfreeamount dutyFreeAmount = 2;
+  Taxamount taxAmount = 3;
+  uint32 taxRate = 4;
+}
+
+message Finalprice {
+  Taxincludedamount taxIncludedAmount = 1;
+  Dutyfreeamount dutyFreeAmount = 2;
+  Taxamount taxAmount = 3;
+  uint32 taxRate = 4;
+}
+
+message Standaloneprice {
+  Taxincludedamount taxIncludedAmount = 1;
+  Dutyfreeamount dutyFreeAmount = 2;
+  Taxamount taxAmount = 3;
+  uint32 taxRate = 4;
+}
+
+message Itemtotalprice {
+  string recurringChargePeriod = 1;
+  uint32 recurringChargePeriodLength = 2;
+  string priceType = 3;
+  Price price = 4;
+  Finalprice finalPrice = 5;
+  Standaloneprice standalonePrice = 6;
+}
+
+message Productoffering {
+  string id = 1;
+  string name = 2;
+  string productOfferingType = 3;
+  string productOfferingTypeGroup = 4;
+  string productOfferingClassification = 5;
+  bool primary = 6;
+}
+
+
+
+message Productrelationship {
+  string type = 1;
+  Product product = 2;
+}
+
+message Product {
+  string referenceId = 1;
+  repeated Relatedparty relatedParty = 2;
+  repeated Productrelationship productRelationship = 3;
+}
+
+
+message Productspecification {
+  string id = 1;
+  string name = 2;
+  string productSpecificationType = 3;
+}
+
+message Metadata {
+  string name = 1;
+  string value = 2;
+  string metadataType = 3;
+}
+
+message Characteristic {
+  string name = 1;
+  string value = 2;
+  repeated Metadata metadata = 3;
+}
+
+message Modifyreason {
+  string name = 1;
+  string action = 2;
+}
+
+
+message Orderitem {
+  string id = 1;
+  string action = 2;
+  string state = 3;
+  uint32 quantity = 4;
+  bool readOnly = 5;
+  string creationDate = 6;
+  repeated Itemtotalprice itemTotalPrice = 7;
+  Productoffering productOffering = 8;
+  Product product = 9;
+  Billingaccount billingAccount = 10;
+  repeated Orderitem orderItem = 11;
+  repeated Modifyreason modifyReason = 12;
+  repeated Metadata metadata = 13;
+  repeated Characteristic characteristic = 14;
+}
+
+message Ordertotalprice {
+  string recurringChargePeriod = 1;
+  uint32 recurringChargePeriodLength = 2;
+  string priceType = 3;
+  Price price = 4;
+  Finalprice finalPrice = 5;
+  Standaloneprice standalonePrice = 6;
+}
+
+message Channel {
+  string id = 1;
+  string name = 2;
+}
+
+message Validfor {
+  string startDateTime = 1;
+  string endDateTime = 2;
+}
+
+message Promotion {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  Validfor validFor = 4;
+  string type = 5;
+  uint32 priority = 6;
+  string applyPolicy = 7;
+}
+
+message Immediatepromotion {
+  string id = 1;
+  string status = 2;
+  string state = 3;
+  Promotion promotion = 4;
+}
+
+
+message ProductOrderResponse {
+  string id = 1;
+  string description = 2;
+  string state = 3;
+  string orderDate = 4;
+  string lastUpdate = 5;
+  string orderPriceDate = 6;
+  bool isCustomerVisible = 7;
+  repeated Relatedparty relatedParty = 8;
+  Billingaccount billingAccount = 9;
+  repeated Immediatepromotion immediatepromotion=10;
+  repeated Orderitem orderItem = 11;
+  repeated Ordertotalprice orderTotalPrice = 12;
+  repeated Channel channel = 13;
+}
+
+message ProductOrderRequest {
+  string id = 1;
+}
+
+
+
+service ProductOrderService {
+  rpc getProductOrder(ProductOrderRequest) returns (ProductOrderResponse);
+}

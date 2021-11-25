@@ -1,0 +1,39 @@
+package rsocketclient.rsocketclient;
+
+import java.time.Duration;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.amdocs.productOffering.model.ProductOfferingServiceClient;
+import com.example.rsocket.server.rsocketserver.ProductOrderServiceClient;
+
+import io.rsocket.RSocket;
+import io.rsocket.core.RSocketConnector;
+import io.rsocket.transport.netty.client.TcpClientTransport;
+
+@SpringBootApplication
+public class Application {
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
+}
+
+@RestController
+class HandleOrderController {
+
+	RSocket productOrderRSocket = RSocketConnector.create().keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5))
+			.connect(TcpClientTransport.create("localhost", 6666)).cache().block();
+	ProductOrderServiceClient productOrderServiceClient = new ProductOrderServiceClient(productOrderRSocket);
+	RSocket productOfferingRSocket = RSocketConnector.create().keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5)).connect(TcpClientTransport.create("localhost", 6688)).cache().block();
+	ProductOfferingServiceClient productOfferingServiceClient = new ProductOfferingServiceClient(productOfferingRSocket);
+    
+	@GetMapping("/handleOrderTL")
+	public void handleOrderTL() {
+		multithreadedHandleOrderWithTL.execute();
+	}
+
+}

@@ -1,0 +1,64 @@
+package rsocketclient.rsocketclient;
+
+import com.amdocs.productOffering.model.ProductOfferingServiceGrpc;
+import com.amdocs.productOffering.model.ProductOfferings;
+import com.example.rsocket.server.rsocketserver.ProductOrderRequest;
+import com.example.rsocket.server.rsocketserver.ProductOrderResponse;
+import com.example.rsocket.server.rsocketserver.ProductOrderServiceGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
+
+import java.time.Duration;
+
+@Component
+public class MultiThreadedHandleOrderWithTL {
+
+    private static final ProductOrderRequest productOrderRequest = ProductOrderRequest.newBuilder().setId("asdasdadas")
+            .build();
+
+    static int count = 1;
+    static int concurrency = 1;
+
+
+    static ThreadLocal<ManagedChannel> productOrderTL = new ThreadLocal<>();
+    static ThreadLocal<ManagedChannel> productOfferingTL = new ThreadLocal<>();
+    static ThreadLocal<ProductOrderServiceGrpc.ProductOrderServiceBlockingStub> productOrderServiceClientTL = new ThreadLocal<>();
+    static ThreadLocal<ProductOfferingServiceGrpc.ProductOfferingServiceBlockingStub> productOfferingServiceClientTL = new ThreadLocal<>();
+
+//    public static void main(String[] args) {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        for (int i = 0; i < 500; i++) {
+//            execute();
+//        }
+//        stopWatch.stop();
+//        System.out.println("Time Taken: " + stopWatch.getTotalTimeMillis());
+//    }
+
+
+    public void execute() {
+
+//        Flux.range(0, count).publishOn(Schedulers.elastic()).flatMap(integer -> Flux.create(sink -> {
+            if (productOrderTL.get() == null) {
+               // System.out.println("creating new productOrderTL");
+                productOrderTL.set(ManagedChannelBuilder.forAddress("localhost", 9977).usePlaintext().build());
+                productOrderServiceClientTL.set(ProductOrderServiceGrpc.newBlockingStub(productOrderTL.get()));
+            }
+            if (productOfferingTL.get() == null) {
+                //System.out.println("creating new productOfferingTL");
+                productOfferingTL.set(ManagedChannelBuilder.forAddress("localhost", 9988).usePlaintext().build());
+                productOfferingServiceClientTL.set(ProductOfferingServiceGrpc.newBlockingStub(productOfferingTL.get()));
+            }
+            ProductOrderResponse productResponse = productOrderServiceClientTL.get().getProductOrder(productOrderRequest);
+            ProductOrderProtobufResponseReader.readProductOrderResponse(productResponse);
+            ProductOfferings productOfferings = productOfferingServiceClientTL.get().getProductOfferings(ProductOfferingsRequestBuilder.prepareProductOfferingsRequest());
+            ProductOfferingsReader.readRequest(productOfferings);
+//            sink.complete();
+//        }), concurrency).blockLast();
+    }
+
+
+}
