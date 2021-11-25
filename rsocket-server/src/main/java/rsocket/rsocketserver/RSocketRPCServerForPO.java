@@ -20,14 +20,14 @@ public class RSocketRPCServerForPO {
                 .block();
         Thread.currentThread().join();
     }
-    private static ProductOrderResponse productOrderProtobufResponse = ProductOrderProtobufResponseBuilder.prepareProductOrderResponse();
-
+    private static Mono<ProductOrderResponse> productOrderProtobufResponse = Mono.just(ProductOrderProtobufResponseBuilder.prepareProductOrderResponse());
+    
     static class DefaultService implements ProductOrderService {
 
         @Override
         public Mono<ProductOrderResponse> getProductOrder(ProductOrderRequest message, ByteBuf metadata) {
             readRequest(message);
-            return Mono.just(productOrderProtobufResponse);
+            return productOrderProtobufResponse;
         }
         private void readRequest(ProductOrderRequest request) {
     		request.getId();
