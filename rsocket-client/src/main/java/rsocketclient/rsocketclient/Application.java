@@ -15,6 +15,7 @@ import com.test.rsocket.server.rsocketserver.ProductOrderServiceClient;
 
 import io.rsocket.RSocket;
 import io.rsocket.core.RSocketConnector;
+import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 
 @SpringBootApplication
@@ -27,10 +28,10 @@ public class Application {
 @RestController
 class HandleOrderController {
 	static ProductOrderRequest productOrderRequest = ProductOrderRequest.newBuilder().setId("asdasdadas").build();
-	static RSocket productOrderRSocket = RSocketConnector.create()
+	static RSocket productOrderRSocket = RSocketConnector.create().payloadDecoder(PayloadDecoder.ZERO_COPY)
 			.keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5))
 			.connect(TcpClientTransport.create("localhost", 8888)).cache().block();
-	static RSocket productOfferingRSocket = RSocketConnector.create()
+	static RSocket productOfferingRSocket = RSocketConnector.create().payloadDecoder(PayloadDecoder.ZERO_COPY)
 			.keepAlive(Duration.ofSeconds(1), Duration.ofSeconds(5))
 			.connect(TcpClientTransport.create("localhost", 8899)).cache().block();
 	static ProductOrderServiceClient productOrderServiceClient = new ProductOrderServiceClient(productOrderRSocket);
