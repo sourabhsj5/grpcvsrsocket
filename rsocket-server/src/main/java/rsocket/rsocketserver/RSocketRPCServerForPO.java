@@ -6,6 +6,7 @@ import com.test.rsocket.server.rsocketserver.ProductOrderService;
 import com.test.rsocket.server.rsocketserver.ProductOrderServiceServer;
 import io.netty.buffer.ByteBuf;
 import io.rsocket.core.RSocketServer;
+import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import reactor.core.publisher.Mono;
 
@@ -14,7 +15,7 @@ import java.util.Optional;
 public class RSocketRPCServerForPO {
 
     public static void main(String[] args) throws InterruptedException {
-        RSocketServer.create()
+        RSocketServer.create().payloadDecoder(PayloadDecoder.ZERO_COPY)
                 .acceptor((connectionSetupPayload, rSocket) -> Mono.just(new ProductOrderServiceServer(new DefaultService(), Optional.empty(), Optional.empty(), Optional.empty())))
                 .bind(TcpServerTransport.create("localhost", 8888))
                 .block();

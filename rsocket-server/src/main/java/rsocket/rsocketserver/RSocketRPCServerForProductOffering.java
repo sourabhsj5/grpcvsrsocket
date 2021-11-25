@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 public class RSocketRPCServerForProductOffering {
 
 	public static void main(String[] args) throws InterruptedException {
-		RSocketServer.create()
+		RSocketServer.create().payloadDecoder(PayloadDecoder.ZERO_COPY)
 				.acceptor((connectionSetupPayload,
 						rSocket) -> Mono.just(new ProductOfferingServiceServer(new DefaultService(), Optional.empty(),
 								Optional.empty(), Optional.empty())))
